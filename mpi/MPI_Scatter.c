@@ -60,6 +60,7 @@ main ( int argc, char *argv[] )
 	Read_vec(local_a, local_n, N, myrank, MPI_COMM_WORLD);
 	for(j=0;j<local_n;j++)
 		printf("i am %d, i receive %d\n", myrank, local_a[j]);
+	free(local_a);
 	MPI_Finalize();
 	return EXIT_SUCCESS;
 }				/* ----------  end of function main  ---------- */

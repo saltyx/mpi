@@ -25,7 +25,7 @@
  *  n*m矩阵,n行m列
  *-----------------------------------------------------------------------------*/
 #define N 4
-#define M 2
+#define M 4
 
 void Transpose(double *b,double *tmp ,int n, int row, int col);
 /* 
@@ -46,29 +46,33 @@ Read_vec (double *local_a,
 	double *b = NULL;
 	if (myrank == 0)
 	{
+		srand(time(NULL));
 		a = malloc( n*sizeof(double) );
 		int i = 0;
-		printf("a is \n");
+		printf("a is\n");
 		for (i=0; i<n;i++)
 		{
-			a[i] = i;
-			printf("%lf ", a[i]);
+			a[i] = rand()%10;
+			if((i+1)%M == 0)
+				printf("%lf\n", a[i]);
+			else printf("%lf, ", a[i]);
 		}
 		printf("\nb is \n");	
 		b = malloc( n*sizeof(double) );
 		i = 0;
 		for (i=0; i<n;i++)
 		{
-			b[i] = i ;
-			printf("%lf ", b[i]);
+			b[i] = rand()%10 ;
+			if((i+1) % N == 0)
+				printf("%lf\n",b[i]);
+			else printf("%lf, ", b[i]);
 		}
+		putchar('\n');
 		Transpose(b, tmp, n, M, N);//将b转置之后放入tmp中
 		MPI_Bcast(tmp, M*N,MPI_DOUBLE, 0,MPI_COMM_WORLD);
-		
 		MPI_Scatter(a, local_n, MPI_DOUBLE, local_a, local_n, MPI_DOUBLE, 0, comm);
 		free(a);
-		free(b);
-		
+		free(b);	
 	}else{
 		MPI_Bcast(tmp, N*M, MPI_DOUBLE, 0,MPI_COMM_WORLD);
 		MPI_Scatter(a, local_n, MPI_DOUBLE, local_a, local_n, MPI_DOUBLE, 0, comm);	
@@ -94,7 +98,7 @@ Gather_vec (
 	int i = 0;
 	if (myrank == 0){
 		t = malloc(N*N*sizeof(double));
-		MPI_Gather(local_c, local_n, MPI_DOUBLE, t, local_n, MPI_DOUBLE, 0, comm);
+		MPI_Gather(local_c, N, MPI_DOUBLE, t, N, MPI_DOUBLE, 0, comm);
 		printf("\nresult:\n");
 		for(i=0;i<N*N;i++)if((i+1)%4 == 0){
 			printf("%lf\n", t[i]);
@@ -102,7 +106,7 @@ Gather_vec (
 		putchar('\n');
 		free(t);
 	}else{
-		MPI_Gather(local_c, local_n, MPI_DOUBLE, t, local_n, MPI_DOUBLE, 0, comm);
+		MPI_Gather(local_c, N, MPI_DOUBLE, t, N, MPI_DOUBLE, 0, comm);
 	}
 }		/* -----  end of function Gather_vec  ----- */
 /* 
@@ -145,14 +149,6 @@ Multiply ()
 	Read_vec(local_a, local_b, local_n, (M*N), myrank, MPI_COMM_WORLD);
 	int i = 0;
 	int j = 0;
-	if(myrank == 0){
-		printf("local_b:\n");
-		for(i=0;i<M*N;i++)
-			printf("%lf ", local_b[i]);
-		putchar('\n');
-		for(i=0;i<local_n;i++)
-			printf("local_a is %lf\n", local_a[i]);
-	}
 	double temp = 0;
 	for (i=0;i<local_n;i++)
 		local_c[i] = 0.0;
@@ -162,10 +158,6 @@ Multiply ()
 			temp += local_a[j]*local_b[i*M+j];
 		local_c[i] = temp;
 	}
-	if (myrank == 0)
-		for(i=0;i<N;i++)
-			printf("local_c : %lf\n", local_c[i]);
-//	MPI_Barrier(MPI_COMM_WORLD);
 	Gather_vec(local_c, local_n, M*N, myrank, MPI_COMM_WORLD);	
 	free(local_a);
 	free(local_b);
